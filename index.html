@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VLM-Focus: Task-Relevant Scene Reduction for Planning and Control in Clutter</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,300&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    :root {
+      --white: #ffffff;
+      --off-white: #f8f8f8;
+      --border: #e0e0e0;
+      --mid-gray: #767676;
+      --dark: #1a1a1a;
+      --link: #1d4ed8;
+      --tamp: #0369a1;
+      --c3: #047857;
+      --vla: #7c3aed;
+      --max: 960px;
+    }
+
+    body {
+      font-family: 'Source Sans 3', sans-serif;
+      font-weight: 300;
+      color: var(--dark);
+      background: var(--white);
+      line-height: 1.65;
+    }
+
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page { max-width: var(--max); margin: 0 auto; padding: 0 1.5rem; }
+
+    /* ── HEADER ── */
+    header {
+      padding: 3rem 1.5rem 2rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .venue-pill {
+      display: inline-block;
+      background: #1a1a2e;
+      color: #fff;
+      font-family: 'Source Code Pro', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 0.28rem 0.9rem;
+      border-radius: 2px;
+      margin-bottom: 1.2rem;
+    }
+
+    h1 {
+      font-family: 'Source Serif 4', serif;
+      font-size: clamp(1.7rem, 4vw, 2.55rem);
+      font-weight: 600;
+      line-height: 1.2;
+      max-width: 830px;
+      margin: 0 auto 1.4rem;
+    }
+
+    .authors {
+      font-size: 1.05rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .authors a { color: var(--dark); font-weight: 400; }
+    .authors a:hover { color: var(--link); }
+
+    .affil {
+      font-size: 0.88rem;
+      color: var(--mid-gray);
+      margin-bottom: 1.8rem;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      justify-content: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.38rem;
+      padding: 0.42rem 1.1rem;
+      font-size: 0.87rem;
+      font-weight: 600;
+      border-radius: 4px;
+      text-decoration: none;
+      transition: filter 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn:hover { filter: brightness(0.85); text-decoration: none; }
+    .btn-dark { background: #222; color: #fff; }
+    .btn-ghost { background: transparent; color: #222; border: 1.5px solid #666; }
+    .btn-ghost:hover { background: #f0f0f0; }
+    .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+    .btn-soon {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+      position: relative;
+    }
+
+    .soon-badge {
+      display: inline-block;
+      font-size: 0.6rem;
+      font-family: 'Source Code Pro', monospace;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: #e5e7eb;
+      color: #6b7280;
+      padding: 0.1rem 0.35rem;
+      border-radius: 2px;
+      margin-left: 0.2rem;
+      vertical-align: middle;
+    }
+
+    /* ── TEASER ── */
+    .teaser-wrap {
+      background: var(--off-white);
+      padding: 2.5rem 1.5rem 1.75rem;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+
+    /* ── SECTIONS ── */
+    .sec {
+      padding: 3.75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h2 {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1.6rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 1.1rem;
+    }
+
+    .rule {
+      width: 2.5rem;
+      height: 2px;
+      background: var(--dark);
+      margin: 0 auto 1.75rem;
+    }
+
+    h3 {
+      font-family: 'Source Serif 4', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.55rem;
+    }
+
+    p { font-size: 0.97rem; line-height: 1.75; margin-bottom: 0.9rem; text-align: justify; }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── ABSTRACT ── */
+    .abstract-box {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--off-white);
+      border-left: 4px solid var(--dark);
+      padding: 1.4rem 1.9rem;
+    }
+
+    /* ── FIGURE ── */
+    .fig { text-align: center; }
+    .fig img, .fig video { max-width: 100%; border: none; display: block; margin: 0 auto; }
+
+    .fig-cap {
+      font-size: 0.86rem;
+      color: #555;
+      margin: 0.6rem 0 0;
+      text-align: left;
+      line-height: 1.55;
+    }
+
+    .fig-cap strong { color: var(--dark); }
+
+    /* ── VIDEO EMBED ── */
+    .vid-wrap {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      background: #111;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .vid-wrap iframe, .vid-wrap video {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;
+    }
+
+    /* ── TWO COLS ── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    .three-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1.75rem;
+      align-items: start;
+    }
+
+    hr.light { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+    /* ── EXPERIMENT FIGURE GRID ──
+       Each .exp-fig-row is a two-column row of figures that sit side-by-side.
+       All rows stack vertically with consistent spacing.
+    ── */
+    .exp-fig-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .exp-fig-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    .exp-fig-row .fig {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .exp-fig-row .fig img,
+    .exp-fig-row .fig video {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .exp-fig-row > .fig .fig-cap {
+      margin-top: 0;
+      align-self: start;
+    }
+
+    .exp-fig-row .fig img,
+    .exp-fig-row .fig video {
+      width: 100%;
+      height: auto;
+      display: block;
+      align-self: center;
+    }
+
+    .exp-fig-row .fig .fig-cap {
+      margin-top: 0.6rem;
+      align-self: start;
+    }
+
+    .exp-fig-row .fig img,
+    .exp-fig-row .fig video {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* For single-col figures (full width rows) */
+    .exp-fig-full {
+      margin: 1.75rem 0;
+    }
+
+    /* ── CONTRIBUTIONS ── */
+    .contribs { list-style: none; display: flex; flex-direction: column; gap: 0.9rem; }
+
+    .contribs li {
+      display: flex;
+      gap: 0.85rem;
+      align-items: flex-start;
+    }
+
+    .c-num {
+      flex-shrink: 0;
+      width: 22px; height: 22px;
+      background: var(--dark);
+      color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.68rem;
+      font-weight: 700;
+      font-family: 'Source Code Pro', monospace;
+      margin-top: 0.18rem;
+    }
+
+    /* ── EXP TABS ── */
+    .exp-tabs {
+      display: flex;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 2.25rem;
+    }
+
+    .e-tab {
+      padding: 0.6rem 1.5rem;
+      font-size: 0.92rem;
+      font-weight: 600;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--mid-gray);
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      font-family: 'Source Sans 3', sans-serif;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .e-tab:hover { color: var(--dark); }
+    .e-tab.at { color: var(--tamp); border-bottom-color: var(--tamp); }
+    .e-tab.ac { color: var(--c3);   border-bottom-color: var(--c3); }
+    .e-tab.av { color: var(--vla);  border-bottom-color: var(--vla); }
+
+    .e-panel { display: none; }
+    .e-panel.active { display: block; }
+
+    /* ── SIDE-BY-SIDE VIDEOS ── */
+    .vid-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.75rem 0 0.5rem;
+    }
+
+    .vid-pair .vid-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .vid-label {
+      font-family: 'Source Code Pro', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mid-gray);
+      text-align: center;
+    }
+
+    /* segment video slot */
+    .seg-vid {
+      background: #111;
+      aspect-ratio: 16/9;
+      position: relative;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .seg-vid video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .seg-vid img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .vid-badge {
+      position: absolute;
+      top: 0.55rem; left: 0.55rem;
+      background: rgba(0,0,0,0.65);
+      color: #fff;
+      font-family: 'Source Code Pro', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.18rem 0.5rem;
+      border-radius: 2px;
+      z-index: 1;
+    }
+
+    /* ── THREE-COL HARDWARE VIDEOS ── */
+    .hw-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.85rem;
+      margin: 1.75rem 0 0.5rem;
+    }
+
+    .hw-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .hw-vid {
+      background: #111;
+      aspect-ratio: 4/3;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hw-vid video,
+    .hw-vid img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .hw-label {
+      font-family: 'Source Code Pro', monospace;
+      font-size: 0.67rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mid-gray);
+      text-align: center;
+    }
+
+    /* ── TABLE ── */
+    table.rt {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin: 0;
+    }
+
+    .rt th {
+      background: #222;
+      color: #fff;
+      padding: 0.45rem 0.85rem;
+      text-align: center;
+      font-size: 0.78rem;
+      letter-spacing: 0.03em;
+    }
+
+    .rt th:first-child { text-align: left; }
+    .rt td { padding: 0.42rem 0.85rem; border-bottom: 1px solid var(--border); text-align: center; }
+    .rt td:first-child { text-align: left; }
+    .rt tr:nth-child(even) td { background: var(--off-white); }
+    .rt .best { font-weight: 700; color: #065f46; }
+    .rt .ours { font-weight: 600; }
+
+    /* table as a fig (so it matches .fig layout in exp-fig-row) */
+    .fig-table {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .fig-table-label {
+      font-size: 0.77rem;
+      font-weight: 600;
+      font-family: 'Source Code Pro', monospace;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      color: var(--dark);
+    }
+
+    /* ── BIBTEX ── */
+    .bib-wrap {
+      background: #1e1e1e;
+      border-radius: 3px;
+      padding: 1.4rem 1.7rem;
+      position: relative;
+      overflow-x: auto;
+    }
+
+    .bib-wrap pre {
+      font-family: 'Source Code Pro', monospace;
+      font-size: 0.8rem;
+      line-height: 1.8;
+      color: #cdd3de;
+      white-space: pre;
+    }
+
+    .bib-type  { color: #c792ea; }
+    .bib-key   { color: #82aaff; }
+    .bib-field { color: #f78c6c; }
+    .bib-val   { color: #c3e88d; }
+    .bib-br    { color: #89ddff; }
+
+    .cp-btn {
+      position: absolute; top: 0.7rem; right: 0.7rem;
+      background: #333; color: #bbb;
+      border: 1px solid #555; border-radius: 3px;
+      padding: 0.22rem 0.65rem;
+      font-family: 'Source Code Pro', monospace;
+      font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer; transition: background 0.15s, color 0.15s;
+    }
+
+    .cp-btn:hover { background: #555; color: #fff; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--off-white);
+      border-top: 1px solid var(--border);
+      padding: 1.75rem 1.5rem;
+      text-align: center;
+      font-size: 0.81rem;
+      color: var(--mid-gray);
+    }
+
+    footer a { color: var(--mid-gray); text-decoration: underline; }
+
+    /* ── PROSE SPACING IN PANELS ── */
+    .e-panel > p { margin-top: 0.5rem; }
+
+    @media (max-width: 680px) {
+      .two-col, .three-col, .vid-pair, .hw-grid,
+      .exp-fig-row { grid-template-columns: 1fr; }
+      .exp-tabs { overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ HEADER ══════════ -->
+<header>
+
+  <h1>VLM-Focus: Task-Relevant Scene Reduction for<br>Planning and Control in Clutter</h1>
+
+  <div class="authors">
+    <a href="https://aileenliao03.github.io/">Aileen Liao</a><sup>1</sup>&ensp;·&ensp;
+    <a href="https://www.seas.upenn.edu/~rhollada/">Rachel Holladay</a><sup>1</sup>&ensp;·&ensp;
+    <a href="https://www.seas.upenn.edu/~dineshj/">Dinesh Jayaraman</a><sup>1</sup>&ensp;·&ensp;
+    <a href="https://highlights.cis.upenn.edu/michael-posa/">Michael Posa</a><sup>1</sup>
+  </div>
+
+  <div class="affil"><sup>1</sup>University of Pennsylvania</div>
+
+  <div class="btn-row">
+    <a href="Aileen_Liao_RSS_2026_Paper-3.pdf" target="_blank" class="btn btn-dark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Paper
+    </a>
+    <span class="btn btn-dark btn-soon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      arXiv <span class="soon-badge">soon</span>
+    </span>
+    <a href="#video" class="btn btn-dark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      Video
+    </a>
+    <span class="btn btn-ghost btn-soon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+      Code <span class="soon-badge">soon</span>
+    </span>
+    <a href="#bibtex" class="btn btn-dark btn-soon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      BibTeX  <span class="soon-badge">soon</span>
+    </a>
+  </div>
+</header>
+
+<!-- ══════════ TEASER (Fig 1) ══════════ -->
+<div class="teaser-wrap">
+  <img src="static/images/figure1.png" alt="VLM-Focus teaser" style="max-width:900px; width:100%; margin:0 auto; display:block;">
+  <p class="fig-cap" style="max-width:900px; margin:0.8rem auto 0; text-align:left;">
+    <strong>Figure 1.</strong>
+    Scene complexity is reduced via pruning and merging.
+    <em>(Left)</em> Control task: move green "G" to a target. VLM-Focus identifies "S", "T", "R" (gray) can be ignored; "A", "E", "I" (pink) are relevant but mergeable; "P" (dark blue) and "D" (light blue) must be modeled individually.
+    <em>(Top right)</em> TAMP: robot must pick three green cubes — VLM-Focus prunes the vast majority of distractors.
+    <em>(Bottom right)</em> VLA: distractor bowls are pruned before querying the policy.
+  </p>
+</div>
+
+<!-- ══════════ ABSTRACT ══════════ -->
+<section class="sec">
+  <div class="page">
+    <h2>Abstract</h2>
+    <div class="rule"></div>
+    <div class="abstract-box">
+      <p>
+        Despite recent advances in general-purpose robotic manipulation, real-world multi-object clutter remains
+        challenging to handle for today's prevalent approaches. The problem scales in complexity due to more
+        objects and collisions, harder dynamics, distractors, and task ambiguity. Bridging this gap to
+        real-world deployment requires effective scene abstractions, yet current methods rely heavily on
+        manually engineered representations — an approach that does not scale.
+      </p>
+      <p>
+        We instead propose to <strong>automatically generate scene-specific, task-specific, adaptive
+        abstractions</strong>, without manual intervention. VLM-Focus produces a de-cluttered abstracted scene
+        representation by <strong>merging</strong> (e.g., stacked objects) or <strong>pruning</strong>
+        (e.g., distant objects) scene entities in a closed loop in response to task progress. In our
+        experiments, we show that VLM-Focus improves classical planning, model-based control, and a
+        vision-language-action model across a diverse set of highly cluttered manipulation scenes.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ MAIN VIDEO ══════════ -->
+<section class="sec" id="video">
+  <div class="page">
+    <h2>Video</h2>
+    <div class="rule"></div>
+    <div class="vid-wrap">
+      <iframe src="https://www.youtube.com/embed/XIm_le14F9s?rel=0&showinfo=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ METHOD ══════════ -->
+<section class="sec">
+  <div class="page">
+    <h2>Method</h2>
+    <div class="rule"></div>
+
+    <p>
+      VLM-Focus is a general, task-agnostic framework for constructing task-focused, dynamic scene abstractions
+      using vision-language models and iterative task feedback. Given a natural language task description and
+      a scene description, a VLM (GPT-4.1 mini) is prompted to output: <strong>(i)</strong> a minimal set of
+      <em>task-relevant</em> objects critical for task completion, and <strong>(ii)</strong> groups of objects
+      that may be <em>merged</em> into a single composite entity.
+    </p>
+
+    <!-- Figure 2 — Architecture -->
+    <div class="fig" style="margin: 1.75rem 0;">
+      <img src="static/images/figure2.png" alt="System overview of VLM-Focus">
+      <p class="fig-cap" style="max-width:820px; margin-left:auto; margin-right:auto;">
+        <strong>Figure 2.</strong> System overview of VLM-Focus. Given a task description via the full scene
+        and prompt information, VLM-Focus (blue) prunes and merges objects to produce an abstracted scene,
+        which is passed to the planner or controller (grey). When triggered by failure or timeout, VLM-Focus
+        revises its scene pruning. This approach generalizes to TAMP, model-based controllers, and VLAs.
+      </p>
+    </div>
+
+    <hr class="light">
+
+    <div class="two-col" style="margin-bottom:1.5rem;">
+      <div>
+        <h3>✂️&nbsp; Pruning</h3>
+        <p>Objects excluded from the task-relevant set are omitted from the planner/controller's world model — eliminating unnecessary decision variables (TAMP), contact constraints (MPC), and visual distractors (VLA).</p>
+      </div>
+      <div>
+        <h3>🔗&nbsp; Merging</h3>
+        <p>Groups of objects that are functionally or dynamically coupled are replaced by a single composite entity whose collision geometry is the union of its members, reducing rigid-body count and contact interactions.</p>
+      </div>
+    </div>
+
+    <h3>🔄&nbsp; Closed-Loop Re-prompting</h3>
+    <p>When a downstream planner finds the abstracted scene infeasible or a controller fails, that feedback is passed back to the VLM — which iteratively corrects the abstraction, restoring over-pruned objects or refining merges. This loop is triggered by timeouts or error codes from downstream systems.</p>
+
+    <hr class="light">
+
+    <h3 style="margin-bottom:1rem;">Contributions</h3>
+    <ul class="contribs">
+      <li>
+        <div class="c-num">1</div>
+        <span>A general, <strong>task-agnostic</strong> method for estimating task relevance using VLMs and constructing task-focused scene abstractions. Closed-loop re-prompting with planning/simulation feedback corrects VLM errors and refines abstractions.</span>
+      </li>
+      <li>
+        <div class="c-num">2</div>
+        <span>Integration with <strong>three distinct paradigms</strong>: (i) Task and Motion Planning (TAMP), (ii) optimization-based contact-implicit control (C3+), and (iii) the π<sub>0.5</sub> Vision-Language-Action (VLA) model.</span>
+      </li>
+      <li>
+        <div class="c-num">3</div>
+        <span>Experimental evaluation in cluttered tabletop settings demonstrating improved <strong>scalability, robustness, and efficiency</strong> with increasing object count, on both simulation and real hardware.</span>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- ══════════ EXPERIMENTS ══════════ -->
+<section class="sec" id="results">
+  <div class="page">
+    <h2>Experiments &amp; Results</h2>
+    <div class="rule"></div>
+    <p style="text-align:center; max-width:680px; margin: 0 auto 2.25rem;">
+      We evaluate VLM-Focus across three planning and control paradigms on cluttered tabletop manipulation
+      tasks, comparing against baselines operating on unfiltered scenes.
+    </p>
+
+    <!-- TABS -->
+    <div class="exp-tabs">
+      <button class="e-tab at" onclick="showTab('t',this)">🗺️&nbsp; TAMP</button>
+      <button class="e-tab"    onclick="showTab('c',this)">⚙️&nbsp; Model-Based Control (C3+)</button>
+      <button class="e-tab"    onclick="showTab('v',this)">🤖&nbsp; Vision-Language-Action</button>
+    </div>
+
+    <!-- ══ TAMP PANEL ══ -->
+    <div class="e-panel active" id="p-t">
+
+      <!-- Row 1: environments | results graph -->
+      <div class="exp-fig-stack">
+        <div class="exp-fig-row">
+          <div class="fig">
+            <img src="static/images/tamp-envs.png" alt="TAMP environments">
+            <p class="fig-cap">
+              <strong>Fig. 3.</strong> Three TAMP environments of increasing complexity: (a) light-clutter tabletop,
+              (b) heavy-clutter tabletop, (c) clutter + stack. The stack is a tray (black) with two goal objects (blue).
+            </p>
+          </div>
+          <div class="fig">
+            <img src="static/images/tamp_graph.png" alt="TAMP results">
+            <p class="fig-cap">
+              <strong>Fig. 4.</strong> Baseline-TAMP vs. VLM-Focus-TAMP success rates (top) and runtimes (bottom).
+              VLM-Focus achieves higher success and lower runtimes on the two more complex tasks.
+              Iteration 1 and 2 are shown stacked.
+            </p>
+          </div>
+        </div>
+
+        <!-- Row 2: pruning examples | anecdote -->
+        <div class="exp-fig-row">
+          <div class="fig">
+            <img src="static/images/tampprunings.png" alt="TAMP pruning examples">
+            <p class="fig-cap">
+              <strong>Fig. 5.</strong> Examples of scene pruning for (a) Heavy Clutter and (b) Clutter &amp; Stack.
+              Semi-transparent objects are pruned; the stack is merged into a single composite object.
+            </p>
+          </div>
+          <div class="fig">
+            <img src="static/images/tamp_anecdote.png" alt="TAMP anecdote — distance-based baseline failure">
+            <p class="fig-cap">
+              <strong>Fig. 6.</strong> Example TAMP scene where a distance-based baseline fails. The set of nearest
+              objects to the goal (highlighted) fails to include a critical blocking object further away, which must
+              be removed to enable a successful approach to the target. VLM-Focus identifies the blocker as
+              task-relevant.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAMP: two side-by-side videos -->
+      <div class="vid-pair">
+        <div class="vid-item">
+          <div class="seg-vid">
+            <video autoplay muted loop playsinline>
+              <source src="static/videos/tamp_clutter.mp4" type="video/mp4">
+            </video>
+          </div>
+          <p class="vid-label">TAMP — Heavy Clutter</p>
+        </div>
+        <div class="vid-item">
+          <div class="seg-vid">
+            <video autoplay muted loop playsinline>
+              <source src="static/videos/tamp_clutterandstack.mp4" type="video/mp4">
+            </video>
+          </div>
+          <p class="vid-label">TAMP — Clutter &amp; Stack</p>
+        </div>
+      </div>
+      <p class="fig-cap" style="margin-bottom: 1.5rem;">
+        Qualitative results showing VLM-Focus pruning and planning in heavy-clutter and clutter+stack environments.
+      </p>
+
+    </div>
+
+    <!-- ══ C3+ PANEL ══ -->
+    <div class="e-panel" id="p-c">
+
+      <div class="exp-fig-stack">
+        <!-- Row 1: scaling | hardware outcomes -->
+        <div class="exp-fig-row">
+          <div class="fig">
+            <img src="static/images/c3_scaling.png" alt="C3 Scaling">
+            <p class="fig-cap">
+              <strong>Fig. 7.</strong> Execution time vs. object count (log scale). Baseline C3+ degrades sharply —
+              exceeding 1600s at 7 objects. VLM-Focus stays within ~30–125s across all counts.
+            </p>
+          </div>
+          <div class="fig">
+            <img src="static/images/c3_hardware.png" alt="C3 Hardware">
+            <p class="fig-cap">
+              <strong>Fig. 8.</strong> Hardware task outcomes for pruning and merging experiments, broken down by
+              iteration. Success distributed across iterations highlights the value of iterative re-querying.
+            </p>
+          </div>
+        </div>
+
+        <!-- Row 2: baselines comparison | results table -->
+        <div class="exp-fig-row">
+          <div class="fig">
+            <img src="static/images/c3_baselines.png" alt="C3 Baselines">
+            <p class="fig-cap">
+              <strong>Fig. 9.</strong> VLM-Focus vs. nearest-k and radius-based geometric pruning baselines (n=30).
+              VLM-Focus captures task-relevant objects regardless of proximity, outperforming heuristics.
+            </p>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 1.75rem;">
+            <div class="fig">
+              <img src="static/images/push_anything_pruning.png" alt="C3 Pruning scene graph">
+              <p class="fig-cap">
+                <!-- <strong>Fig. 9.</strong> Three iterations of the pruned scene graph during a planar pushing episode.
+                Pruned objects shown in gray; successive iterations adapt to the evolving environment state. -->
+              </p>
+            </div>
+            <div class="fig">
+              <img src="static/images/push_anything_merging.png" alt="C3 Merging scene graph">
+              <p class="fig-cap">
+                <strong>Fig. 10.</strong> Three iterations of the pruned (top) and merged (bottom) object sets.
+                  Pruned objects shown in gray; successive iterations adapt to the evolving environment state.
+                  Merged groups (uniform colors) become more focused over iterations.
+              </p>
+            </div>
+          </div>
+        </div>
+
+
+      <!-- C3+: two side-by-side hardware videos -->
+      <div class="vid-pair">
+        <div class="vid-item">
+          <div class="seg-vid">
+            <video autoplay muted loop playsinline>
+              <source src="static/videos/c3_pruning.mp4" type="video/mp4">
+            </video>
+          </div>
+          <p class="vid-label">C3+ — Pruning on Hardware</p>
+        </div>
+        <div class="vid-item">
+          <div class="seg-vid">
+            <video autoplay muted loop playsinline>
+              <source src="static/videos/c3_merging.mp4" type="video/mp4">
+            </video>
+          </div>
+          <p class="vid-label">C3+ — Merging on Hardware</p>
+        </div>
+      </div>
+      <p class="fig-cap" style="margin-bottom: 1.5rem;">
+        Real robot planar pushing experiments demonstrating pruning and merging strategies across multiple feedback iterations.
+      </p>
+
+    </div>
+    </div>
+
+    <!-- ══ VLA PANEL ══ -->
+    <div class="e-panel" id="p-v">
+
+      <div class="exp-fig-stack">
+        <!-- Row 1: pruning visualization | success rates -->
+        <div class="exp-fig-row">
+          <div class="fig">
+            <img src="static/images/vla_pruning.png" alt="VLA Pruning">
+            <p class="fig-cap">
+              <strong>Fig. 11.</strong> VLA pruning visualization. Grey objects are pruned; colored mask overlays
+              are task-relevant. Goal (green) and target (purple) are selected; a second distractor goal is
+              selected due to prompt ambiguity.
+            </p>
+          </div>
+          <div class="fig">
+            <img src="static/images/vla_success_rates.png" alt="VLA Success Rates">
+            <p class="fig-cap">
+              <strong>Fig. 12.</strong> Task success rates on LIBERO-Spatial (100 episodes, 10 tasks). Clutter
+              drops baseline from 0.85 → 0.50; VLM-Focus recovers to 0.70.
+            </p>
+          </div>
+        </div>
+
+        <!-- Row 2: hardware photo | hardware table -->
+        <div class="exp-fig-row">
+          <div class="fig">
+            <img src="static/images/vla_hardware.png" alt="VLA Hardware">
+            <p class="fig-cap">
+              <strong>Fig. 13.</strong> Real hardware VLA experiment. VLM-Focus applied on hand images (b) without
+              simulator bounding boxes. GroundingDINO + SAM + LaMa segment and inpaint task-irrelevant objects (c).
+            </p>
+          </div>
+          <div class="fig-table">
+            <p class="fig-table-label">Table I — Hardware VLA (π₀.₅), n=10 per fruit</p>
+            <table class="rt" style="font-size:0.78rem;">
+              <thead>
+                <tr><th>Method</th><th>Task</th><th>🍍</th><th>🍐</th><th>🍌</th><th>🍎</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>VLA (full scene)</td><td>Pick Up</td><td>0.8</td><td>0.7</td><td>0.0</td><td>0.0</td></tr>
+                <tr><td>VLA (full scene)</td><td>Place</td><td>0.2</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
+                <tr><td class="ours">+ VLM-Focus</td><td class="ours">Pick Up</td><td class="best">1.0</td><td>0.7</td><td class="best">0.7</td><td class="best">0.7</td></tr>
+                <tr><td class="ours">+ VLM-Focus</td><td class="ours">Place</td><td class="best">0.5</td><td class="best">0.3</td><td class="best">0.3</td><td class="best">0.7</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VLA: simulation video (full width) -->
+      <div class="exp-fig-full">
+        <div class="seg-vid" style="max-width:780px; margin:0 auto; aspect-ratio:16/9;">
+          <video autoplay muted loop playsinline>
+            <source src="static/videos/vla.mp4" type="video/mp4">
+          </video>
+        </div>
+        <p class="fig-cap" style="max-width:780px; margin-left:auto; margin-right:auto;">
+          VLA results in LIBERO-Spatial simulation. Clutter drops baseline success from 0.85 to 0.50;
+          VLM-Focus recovers to 0.70 by inpainting task-irrelevant objects before querying the policy.
+        </p>
+      </div>
+
+      <!-- VLA: hardware — three-column -->
+      <div class="hw-grid">
+        <div class="hw-item">
+          <div class="hw-vid">
+            <video autoplay muted loop playsinline>
+              <source src="static/videos/varied_camera_2.mp4" type="video/mp4">
+            </video>
+          </div>
+          <p class="hw-label">Front Camera</p>
+        </div>
+        <div class="hw-item">
+          <div class="hw-vid">
+            <video autoplay muted loop playsinline>
+              <source src="static/videos/hand_camera.mp4" type="video/mp4">
+            </video>
+          </div>
+          <p class="hw-label">Hand Camera</p>
+        </div>
+        <div class="hw-item">
+          <div class="hw-vid">
+            <video autoplay muted loop playsinline>
+              <source src="static/videos/inpaint fast.mp4" type="video/mp4">
+            </video>
+          </div>
+          <p class="hw-label">Hand Camera — Inpainted</p>
+        </div>
+      </div>
+      <p class="fig-cap" style="margin-bottom: 1.5rem;">
+        Real hardware fruit pick-and-place using the full open-vocabulary pipeline (GroundingDINO + SAM + LaMa).
+        The inpainted hand-camera view (right) shows distractors removed before querying the π₀.₅ policy.
+      </p>
+
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <p>
+    Website adapted from the <a href="https://nerfies.github.io">Nerfies</a> project page and licensed under a
+    <a href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+  </p>
+</footer>
+
+<script>
+  const ACTIVE = { t: 'at', c: 'ac', v: 'av' };
+
+  function showTab(id, btn) {
+    document.querySelectorAll('.e-panel').forEach(p => p.classList.remove('active'));
+    const panel = document.getElementById('p-' + id);
+    panel.classList.add('active');
+    document.querySelectorAll('.e-tab').forEach(b => b.classList.remove('at','ac','av'));
+    btn.classList.add(ACTIVE[id]);
+    panel.querySelectorAll('video').forEach(v => { v.currentTime = 0; v.play(); });
+    alignCaptions();
+  }
+
+  function copyBib() {
+    const text = `@inproceedings{liao2026vlmfocus,
+  author    = {Liao, Aileen and Holladay, Rachel and Jayaraman, Dinesh and Posa, Michael},
+  title     = {VLM-Focus: Task-Relevant Scene Reduction for Planning and Control in Clutter},
+  booktitle = {Robotics: Science and Systems (RSS)},
+  year      = {2026},
+}`;
+    navigator.clipboard.writeText(text).then(() => {
+      const b = document.querySelector('.cp-btn');
+      b.textContent = '✓ Copied';
+      setTimeout(() => b.textContent = 'Copy', 2500);
+    });
+  }
+
+  function alignCaptions() {
+    document.querySelectorAll('.exp-fig-row').forEach(row => {
+      const cols = [...row.children];
+      if (cols.length < 2) return;
+
+      // 1. Reset captions and image margins from any prior run
+      cols.forEach(col => {
+        col.querySelectorAll('.fig-cap').forEach(el => el.style.paddingTop = '');
+        col.querySelectorAll('img, video').forEach(el => el.style.marginTop = '');
+      });
+
+      // 2. Force reflow so measurements reflect the reset layout
+      void row.offsetHeight;
+
+      // 3. Measure each column's last caption top, relative to the row
+      //    (row-relative deltas are scroll-invariant)
+      const rowTop = row.getBoundingClientRect().top;
+      const lastCaps = cols.map(col => {
+        const caps = [...col.querySelectorAll('.fig-cap')];
+        return caps[caps.length - 1] ?? null;
+      });
+      const relTops = lastCaps.map(c =>
+        c ? c.getBoundingClientRect().top - rowTop : null
+      );
+      const validTops = relTops.filter(t => t !== null);
+      if (validTops.length < 2) return;
+      const maxRelTop = Math.max(...validTops);
+
+      // 4. Align captions and center images in the freed-up space.
+      //    Adding paddingTop=diff to the caption and marginTop=diff/2 to the
+      //    image places equal whitespace above and below the image.
+      cols.forEach((col, i) => {
+        if (relTops[i] === null) return;
+        const diff = maxRelTop - relTops[i];
+        if (diff <= 1) return;
+        // image marginTop=diff/2 shifts the whole column content down by diff/2,
+        // so the caption only needs an additional diff/2 to reach the target.
+        const img = col.querySelector('img, video');
+        if (img) img.style.marginTop = (diff / 2) + 'px';
+        lastCaps[i].style.paddingTop = (diff / 2) + 'px';
+      });
+    });
+  }
+
+  // Initial run: once on load (images may still be loading),
+  // then a correction pass once fonts + images are fully ready.
+  window.addEventListener('load', alignCaptions);
+  document.fonts.ready.then(() => {
+    const imgs = [...document.querySelectorAll('.exp-fig-row img')];
+    const pending = imgs.filter(img => !img.complete);
+    if (pending.length === 0) {
+      alignCaptions();
+    } else {
+      let done = 0;
+      const tryAlign = () => { if (++done >= pending.length) alignCaptions(); };
+      pending.forEach(img => { img.addEventListener('load', tryAlign); img.addEventListener('error', tryAlign); });
+    }
+  });
+
+  window.addEventListener('resize', alignCaptions);
+</script>
+</body>
+</html>
